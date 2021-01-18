@@ -36,6 +36,7 @@ class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='blog_post')
     body = models.TextField()
+    # image = models.ImageField(upload_to='static/images', height_field=300, width_field=400, max_length=100)
     publish = models.DateTimeField(default=timezone.now)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -43,7 +44,7 @@ class Post(models.Model):
                               default='draft')
     objects = models.Manager() # Manager default
     published = PublishedManager() # New my Manager
-    tags = TaggableManager()
+    tags = TaggableManager(blank=True)
 
 
     class Meta:
@@ -63,6 +64,8 @@ class Post(models.Model):
 
 class Comment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    #
+    # user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=80)
     email = models.EmailField()
     body = models.TextField()
@@ -70,9 +73,14 @@ class Comment(models.Model):
     updated = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
 
+
     class Meta:
         ordering = ('created',)
-
+        verbose_name = 'Comment'
+        verbose_name_plural = 'Comments'
+    # Попытка создания ответов на комментарии
+    # comments_text = models.TextField()
+    # comments_post = models.ForeignKey(Post, on_delete=models.CASCADE)
     def __str__(self):
         return 'Comment by {} on {}'.format(self.name, self.post)
 
