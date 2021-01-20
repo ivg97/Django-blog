@@ -8,6 +8,10 @@
     <p class="date">
         Published {{ post.publish }} by {{ post.author }}
     </p>
+
+    {% if post.image %}
+    <img src="{{ MEDIA_URL }}{{ post.image.url }}" alt="Photo">
+    {% endif %}
     {{ post.body|markdown }}
 
 
