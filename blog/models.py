@@ -63,19 +63,19 @@ class Post(models.Model):
                                                  self.slug])
 
 class Comment(models.Model):
+    '''Model comments'''
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
-    #
-    # user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=80)
     email = models.EmailField()
     body = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
 
 
     class Meta:
-        ordering = ('created',)
+        ordering = ('-created',)
         verbose_name = 'Comment'
         verbose_name_plural = 'Comments'
     # Попытка создания ответов на комментарии
@@ -84,5 +84,23 @@ class Comment(models.Model):
     def __str__(self):
         return 'Comment by {} on {}'.format(self.name, self.post)
 
+
+# class Answer(models.Model):
+#     '''Model for answerto a comment'''
+#     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='answers')
+#     name = models.CharField(max_length=80)
+#     email = models.EmailField()
+#     answer = models.CharField(max_length=150)
+#     created = models.DateTimeField(auto_now_add=True)
+#     updated = models.DateTimeField(auto_now_add=True)
+#     active = models.BooleanField(default=True)
+#
+#     class Meta:
+#         ordering = ('created',)
+#         verbose_name = 'Answer'
+#         verbose_name_plural = 'Answers'
+#
+#     def __str__(self):
+#         return 'Comment by {} on {}'.format(self.name, self.comment)
 
 # Create your models here.

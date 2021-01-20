@@ -1,5 +1,5 @@
 from django import forms
-from .models import Comment
+from .models import Comment#, Answer
 
 
 class EmailPostForm(forms.Form):
@@ -18,9 +18,17 @@ class EmailPostForm(forms.Form):
 class CommentForm(forms.ModelForm):
     '''Form for comments'''
     class Meta:
+        ordering = ('-created',)
         model = Comment
         fields = ('name', 'email', 'body')
+
 
 class SearchForm(forms.Form):
     '''Form for post search'''
     query = forms.CharField()
+
+# class AnswerForm(forms.ModelForm):
+#     '''Form for answer'''
+#     class Meta:
+#         model = Answer
+#         fields = ('name', 'email', 'answer')

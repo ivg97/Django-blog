@@ -9,48 +9,98 @@
         Published {{ post.publish }} by {{ post.author }}
     </p>
     {{ post.body|markdown }}
+
+
+    <!-- Share posts in email -->
     <p>
         <a href='{% url "blog:post_share" post.id %}'>
             Share this post
         </a>
     </p>
-<!--   Формирование списка рекомендованнных статей -->
+
+    <!--   Формирование списка рекомендованнных статей -->
     <h2>
         Similar posts
     </h2>
     {% for post in similar_posts %}
-    <p>
-        <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
-    </p>
+        <p>
+            <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+        </p>
     {% empty %}
         There are no similar posts yet.
     {% endfor %}
 
-<!--Подсистема комментариев-->
-    {% with comments.count as total_comments %}
-        <h2>{{ total_comments }} comment {{ total_comments|pluralize }}</h2>
-    {% endwith %}
-
-    {% for comment in comments %}
-        <div class="comment">
-            <p class="info">
-                Comment {{ forloop.counter }} by {{ comment.name }}
-                {{ comments.created }}
-            </p>
-            {{ comment.body|linebreaks }}
+    <!--  Comments Form  -->
+    <div style="display: flex; flex-direction: column;">
+        <div>
+            <h2>Add a new comment</h2>
+            <!-- Form for comments -->
+            <form action="." method="post">
+                {{ comment_form.as_p }}
+                {% csrf_token %}
+                <p><input type='submit' value="Add comment"></p>
+            </form>
         </div>
-        {% empty %}
-            <p>There are no comments yet.</p>
-    {% endfor %}
 
-    {% if new_comment %}
-        <h2> Your comment has been added. </h2>
-    {% else %}
-        <h2>Add a new comment</h2>
-        <form action="." method="post">
-            {{ comment_form.as_p }}
-            {% csrf_token %}
-            <p><input type="submit" value="Add comment"></p>
-        </form>
-    {% endif %}
-{% endblock content%}
+        <!-- Comment with nested comments -->
+        <div style="display: flex; flex-direction: column">
+            <!-- Если есть комментарии, отобразить комментарии -->
+            {% for comment in comments %}
+                <div class="comment" style="background-color: powderblue">
+                    <p class="info">{{ comment.name }} | {{ comment.created }}</p>
+                    {{ comment.body|linebreaks }}
+                </div>
+
+                <!-- Если есть ответы, отобразить ответы -->
+                {% for replay in comment.replies.all %}
+                    <p class="info">{{ replay.name }} | {{ replay.created }}</p>
+                    <li>{{ replay.body }}</li><br>
+                {% endfor %}
+
+                <!-- Форма для ответов -->
+                <div id="answer" style="display: block">
+                    <form action="." method="post">
+                        {{ comment_form.as_p }}
+                        {% csrf_token %}
+                        <!-- Input for parent comment -->
+                        <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                        <input type="submit" value="Reply">
+                    </form>
+                </div>
+            {% empty %}
+                <!-- If do not answers, to input... -->
+                <h4>There are mo comments yet.</h4>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!--Подсистема комментариев-->
+    {##}
+    {#    {% with comments.count as total_comments %}#}
+    {#        <h2>{{ total_comments }} comment {{ total_comments|pluralize }}</h2>#}
+    {#    {% endwith %}#}
+    {##}
+    {#    {% for comment in comments %}#}
+    {#        <div class="comment">#}
+    {#            <p class="info">#}
+    {#                Comment {{ forloop.counter }} by {{ comment.name }}#}
+    {#                {{ comments.created }}#}
+    {#            </p>#}
+    {#            {{ comment.body|linebreaks }}#}
+    {#        </div>#}
+    {#        {% empty %}#}
+    {#            <p>There are no comments yet.</p>#}
+    {#    {% endfor %}#}
+    {#    <div>#}
+    {#    {% if new_comment %}#}
+    {#        <h2> Your comment has been added. </h2>#}
+    {#    {% else %}#}
+    {#        <h2>Add a new comment</h2>#}
+    {#        <form action="." method="post">#}
+    {#            {{ comment_form.as_p }}#}
+    {#            {% csrf_token %}#}
+    {#            <p><input type="submit" value="Add comment"></p>#}
+    {#        </form></div><br>#}
+
+    {#    {% endif %}#}
+{% endblock content %}

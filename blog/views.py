@@ -1,15 +1,17 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .models import Post, Comment
+from .models import Post, Comment#, Answer
 from django.views.generic import ListView
-from .forms import EmailPostForm, CommentForm, SearchForm
+from .forms import EmailPostForm, CommentForm, SearchForm#, AnswerForm
 from django.core.mail import send_mail
 from taggit.models import Tag
 from django.db.models import Count
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.http import HttpResponseRedirect
 
 
 class PostListView(ListView):
+    ''''''
     queryset = Post.published.all()
     context_object_name = 'posts'
     paginate_by = 3
@@ -70,21 +72,46 @@ def post_detail(request, year, month, day, post):
                              publish__day=day,)
     # Список активных комментариев для этой статьи
     # comments is <QuerySet[]>
-    comments = post.comments.filter(active=True)
+    # Список активных родительских комментариев
+    comments = post.comments.filter(active=True, parent__isnull=True)
     comment_form = CommentForm()
     new_comment = None
     if request.method == 'POST':
         # Пользователь отправил коммент
         comment_form = CommentForm(data=request.POST)
         if comment_form.is_valid():
-            # Создаем комментарий, но пока не сохр в БД
+            parent_obj = None
+            try:
+                # получить идентификатор родительского комментария
+                parent_id = int(request.POST.get('parent_id'))
+            except:
+                parent_id = None
+            if parent_id:   #если есть id то получаем объект по id
+                parent_obj = Comment.objects.get(id=parent_id)
+                if parent_obj:   # если такой объект существует
+                    # create object comment
+                    replay_comment = comment_form.save(commit=False)
+                    # назначить родительский объект для ответа на комментарий
+                    replay_comment.parent = parent_obj
+            # normal comment
+            # create object comment, do not save in database
             new_comment = comment_form.save(commit=False)
-            # Привязываем комментарий к текущей статье
+            # назначить пост для комментария
             new_comment.post = post
-            # Сохр комментрий в БД
+            # save
             new_comment.save()
-        else:
-            comment_form = CommentForm()
+            return HttpResponseRedirect(post.get_absolute_url())
+    else:
+        comment_form = CommentForm()
+
+            # Создаем комментарий, но пока не сохр в БД
+            # new_comment = comment_form.save(commit=False)
+            # Привязываем комментарий к текущей статье
+            # new_comment.post = post
+            # Сохр комментрий в БД
+            # new_comment.save()
+        # else:
+        #     comment_form = CommentForm()
 
     # формирование списка похожих статей
     post_list_ids = post.tags.values_list('id', flat=True)
@@ -93,12 +120,32 @@ def post_detail(request, year, month, day, post):
     similar_posts = similar_posts.annotate(same_tags=Count('tags'))\
                         .order_by('-same_tags', '-publish')[:4]
 
+
+
     return  render(request, 'blog/post/detail.html', {'post': post,
                                                       'comments': comments,
-                                                      'new_comment': new_comment,
+                                                      # 'new_comment': new_comment,
                                                       'comment_form': comment_form,
-                                                      'similar_posts': similar_posts})
+                                                      'similar_posts': similar_posts,
+                                                      })
 
+
+# def answer(request):
+#     Формирование ответов на комменты
+    # answers = comments.answers.filter(active=True)
+    # answers_form = AnswerForm()
+    # new_answer = None
+    # if request.method == 'POST':
+    #     answers_form = CommentForm(data=request.POST)
+    #     if answers_form.is_valid():
+    #         new_answer = comment_form.save(commit=False)
+    #         new_answer.comments = comments
+    #         new_answer.save()
+    #     else:
+    #         answers_form = AnswerForm()
+    # return render(request, 'blog/post/detail.html', {'answers' : answers,
+    #                                                  'new_answer': new_answer,
+    #                                                  'answers_form': answers_form,})
 
 def post_share(request, post_id):
     '''получение статьи по идентификатору'''
