@@ -1,13 +1,14 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .models import Post, Comment#, Answer
+from .models import Post, Comment, Like
 from django.views.generic import ListView
-from .forms import EmailPostForm, CommentForm, SearchForm#, AnswerForm
+from .forms import EmailPostForm, CommentForm, SearchForm
 from django.core.mail import send_mail
 from taggit.models import Tag
 from django.db.models import Count
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.http import HttpResponseRedirect
+from django.contrib.auth.models import User, UserManager
 
 
 class PostListView(ListView):
@@ -113,6 +114,14 @@ def post_detail(request, year, month, day, post):
         # else:
         #     comment_form = CommentForm()
 
+    # Like/Dislake
+    # old_like = Like.objects.filter(user=request.user, for_post= post)
+
+
+    # print(old_like)
+    # post_id = post.pk
+    # print(post_id)
+
     # формирование списка похожих статей
     post_list_ids = post.tags.values_list('id', flat=True)
     similar_posts = Post.published.filter(tags__in=post_list_ids)\
@@ -130,22 +139,49 @@ def post_detail(request, year, month, day, post):
                                                       })
 
 
-# def answer(request):
-#     Формирование ответов на комменты
-    # answers = comments.answers.filter(active=True)
-    # answers_form = AnswerForm()
-    # new_answer = None
-    # if request.method == 'POST':
-    #     answers_form = CommentForm(data=request.POST)
-    #     if answers_form.is_valid():
-    #         new_answer = comment_form.save(commit=False)
-    #         new_answer.comments = comments
-    #         new_answer.save()
-    #     else:
-    #         answers_form = AnswerForm()
-    # return render(request, 'blog/post/detail.html', {'answers' : answers,
-    #                                                  'new_answer': new_answer,
-    #                                                  'answers_form': answers_form,})
+def like_or_dislike(request, post_id, is_like):
+    ''''''
+    post = get_object_or_404(Post, id=post_id)
+    old_like = Like.objects.filter(user=request.user, for_post=post)
+    if old_like:
+        like = Like.objects.get(user=request.user, for_post=post)
+        if like.like_or_dislike == 'like' and is_like == 'like':
+            like.delete()
+            post.post_like -= 1
+            post.save()
+        elif like.like_or_dislike == 'dislike' and is_like == 'dislike':
+            like.delete()
+            post.post_dislike -= 1
+            post.save()
+        elif like.like_or_dislike == 'like' and is_like == 'dislike':
+            like.like_or_dislike = 'dislike'
+            like.save()
+            post.post_dislike += 1
+            post.post_like -= 1
+            post.save()
+        elif like.like_or_dislike == 'dislike' and is_like == 'like':
+            like.like_or_dislike = 'like'
+            like.save()
+            post.post_dislike -= 1
+            post.post_like += 1
+            post.save()
+    else:
+        new_like = Like(user=request.user, for_post=post,
+                        like_or_dislike=is_like)
+        new_like.save()
+        if is_like == 'like':
+            post.post_like += 1
+            post.save()
+        elif is_like == 'dislike':
+            post.post_dislike += 1
+            post.save()
+
+
+
+
+    # print(user)
+    return HttpResponseRedirect(post.get_absolute_url())
+
 
 def post_share(request, post_id):
     '''получение статьи по идентификатору'''
@@ -162,7 +198,7 @@ def post_share(request, post_id):
     # для обработки введенных данных
     # Заполненная форма отправляется POST запросом
     # Пустая форма отображается методом GET
-    print(request.method)
+    # print(request.method)
     if request.method == 'POST':
         #print('*' * 70+'\n'+'try - except | ' * 3 +'\n'+ '*'* 70+'\nif 1: POST')
         # request.method - это POST or GET

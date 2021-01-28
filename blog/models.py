@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.urls import reverse
 from taggit.managers import TaggableManager
-from PIL import Image, ImageEnhance
+from PIL import Image
 
 
 class PublishedManager(models.Manager):
@@ -38,7 +38,7 @@ class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='blog_post')
     body = models.TextField()
-    image = models.ImageField(upload_to='images', null=True, blank=True,
+    image = models.ImageField(upload_to='images/blog/post', null=True, blank=True,
                               verbose_name='image',
                               help_text='150x150px',
                               )
@@ -50,14 +50,18 @@ class Post(models.Model):
     objects = models.Manager()  # Manager default
     published = PublishedManager()  # New my Manager
     tags = TaggableManager(blank=True)
+    # system like/dislike
+    post_like = models.IntegerField('like', default=0)
+    post_dislike = models.IntegerField('dislike', default=0)
 
-    def save(self):
-        super().save()
-        img = Image.open(self.image.path)
-        if img.height > 300 or img.width > 300:
-            output_size = (300, 300)
-            img.thumbnail(output_size)
-            img.save(self.image.path)
+    if image:
+        def save(self):
+            super().save()
+            img = Image.open(self.image.path)
+            if img.height > 300 or img.width > 300:
+                output_size = (300, 300)
+                img.thumbnail(output_size)
+                img.save(self.image.path)
 
     class Meta:
         ''' Содержит метаданные + сортировка статей по убыванию даты публикации'''
@@ -73,6 +77,26 @@ class Post(models.Model):
                                                  self.publish.month,
                                                  self.publish.day,
                                                  self.slug])
+
+
+class Like(models.Model):
+    LIKE_OR_DISLIKE_CHOICES = (
+        ('LIKE', 'like'),
+        ('DISLIKE', 'dislike'),
+        (None, 'None'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    for_post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    like_or_dislike = models.CharField(max_length=7,
+                                       choices=LIKE_OR_DISLIKE_CHOICES,
+                                       default=None,
+                                       )
+
+    class Meta:
+        verbose_name = 'Лайк'
+        verbose_name_plural = 'Лайки'
+
 
 
 class Comment(models.Model):
@@ -97,22 +121,5 @@ class Comment(models.Model):
     def __str__(self):
         return 'Comment by {} on {}'.format(self.name, self.post)
 
-# class Answer(models.Model):
-#     '''Model for answerto a comment'''
-#     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='answers')
-#     name = models.CharField(max_length=80)
-#     email = models.EmailField()
-#     answer = models.CharField(max_length=150)
-#     created = models.DateTimeField(auto_now_add=True)
-#     updated = models.DateTimeField(auto_now_add=True)
-#     active = models.BooleanField(default=True)
-#
-#     class Meta:
-#         ordering = ('created',)
-#         verbose_name = 'Answer'
-#         verbose_name_plural = 'Answers'
-#
-#     def __str__(self):
-#         return 'Comment by {} on {}'.format(self.name, self.comment)
 
 # Create your models here.

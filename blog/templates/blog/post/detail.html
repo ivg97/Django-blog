@@ -10,9 +10,14 @@
     </p>
 
     {% if post.image %}
-    <img src="{{ MEDIA_URL }}{{ post.image.url }}" alt="Photo">
+    <img src="{{ MEDIA_URL }}{{ post.image.url }}" alt="post photo">
     {% endif %}
     {{ post.body|markdown }}
+
+    <!-- Like / Dislike -->
+    <a href="{% url 'blog:like_or_dislike' post.id 'like' %}">like </a>
+    {{ post.post_like }}    {{ post.post_dislike }}
+    <a href="{% url 'blog:like_or_dislike' post.id 'dislike' %}">dislike</a>
 
 
     <!-- Share posts in email -->

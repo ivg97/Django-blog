@@ -27,8 +27,3 @@ class SearchForm(forms.Form):
     '''Form for post search'''
     query = forms.CharField()
 
-# class AnswerForm(forms.ModelForm):
-#     '''Form for answer'''
-#     class Meta:
-#         model = Answer
-#         fields = ('name', 'email', 'answer')

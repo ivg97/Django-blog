@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post, Comment#, Answer
+from .models import Post, Comment, Like
 
 # регистрируем декодируемый класс - наследник Model.Admin
 @admin.register(Post)
@@ -24,10 +24,9 @@ class CommentAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'post', 'created', 'active')
     list_filter = ('active', 'created', 'updated')
     search_fields = ('name', 'email', 'body')
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'for_post', 'like_or_dislike')
 # Register your models here.
 
-# @admin.register(Answer)
-# class AnswerAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'email', 'answer', 'created', 'active')
-#     list_filter = ('active', 'created', 'updated')
-#     search_fields = ('name', 'email', 'answer')
